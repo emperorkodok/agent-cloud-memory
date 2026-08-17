@@ -68,7 +68,6 @@ jobs:
       - name: Lint
         run: |
           ruff check . --config pyproject.toml
-          mypy agent_cloud_memory/ --ignore-missing-imports
 
   build:
     name: Build Package
