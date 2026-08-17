@@ -268,7 +268,7 @@ class TestCloudMemoryClient:
         assert len(profile) >= 1
 
         # List
-        listed = client.list(profile="test_client", limit=10)
+        listed = client.list_memories(profile="test_client", limit=10)
         assert len(listed) >= 1
 
         # Forget
