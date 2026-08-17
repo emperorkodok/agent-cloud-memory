@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-cloud-memory"
+version = "0.1.0"
+description = "Universal cloud memory layer for AI agents - sync memories, sessions, config and skills across frameworks"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Hermes Community", email = "community@nousresearch.com"}]
+maintainers = [{name = "Hermes Community"}]
+keywords = [
+    "ai-agent", "memory", "postgresql", "sync", "cloud", "hermes", "openclaw",
+    "claude-code", "codex", "multi-agent", "cross-framework"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "psycopg[binary,pool]>=3.2",
+    "psycopg-pool>=3.2",
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "tenacity>=8.0",
+    "tomli_w>=1.0.0",
+]
+
+[project.optional-dependencies]
+hermes = ["hermes-agent"]
+openclaw = []
+claude-code = []
+codex = []
+dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "pytest-cov>=4.0", "ruff>=0.1", "mypy>=1.0"]
+all = ["hermes-agent"]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/agent-cloud-memory"
+Repository = "https://github.com/yourusername/agent-cloud-memory"
+Issues = "https://github.com/yourusername/agent-cloud-memory/issues"
+Documentation = "https://github.com/yourusername/agent-cloud-memory/docs"
+
+[project.scripts]
+acm = "agent_cloud_memory.cli:main"
+acm-setup = "agent_cloud_memory.scripts.setup:main"
+acm-sync = "agent_cloud_memory.scripts.sync:main"
+acm-restore = "agent_cloud_memory.scripts.restore:main"
+acm-status = "agent_cloud_memory.scripts.status:main"
+acm-cleanup = "agent_cloud_memory.scripts.cleanup:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent_cloud_memory*"]
+
+[tool.setuptools.package-data]
+"agent_cloud_memory" = ["py.typed"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "PT", "T20", "SIM"]
+ignore = ["S101", "T201"]
+exclude = [".venv", "build", "dist"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
