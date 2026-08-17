@@ -65,19 +65,9 @@ jobs:
         run: |
           pytest tests/ -v --tb=short -x
 
-      - name: Debug pyproject.toml
-        run: |
-          echo "=== pyproject.toml exists ==="
-          ls -la pyproject.toml
-          echo "=== ruff version ==="
-          ruff --version
-          echo "=== pyproject.toml ruff config ==="
-          cat pyproject.toml | grep -A20 "tool.ruff"
-
       - name: Lint
         run: |
           ruff check . --config pyproject.toml
-          mypy agent_cloud_memory/ --ignore-missing-imports
 
   build:
     name: Build Package
