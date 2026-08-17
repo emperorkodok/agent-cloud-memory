@@ -31,6 +31,7 @@ dependencies = [
     "pydantic>=2.0",
     "tenacity>=8.0",
     "tomli_w>=1.0.0",
+    "watchfiles>=1.0",
 ]
 
 [project.optional-dependencies]
@@ -51,6 +52,7 @@ Documentation = "https://github.com/yourusername/agent-cloud-memory/docs"
 acm = "agent_cloud_memory.cli:main"
 acm-setup = "agent_cloud_memory.scripts.setup:main"
 acm-sync = "agent_cloud_memory.scripts.sync:main"
+acm-watch = "agent_cloud_memory.scripts.watch:main"
 acm-restore = "agent_cloud_memory.scripts.restore:main"
 acm-status = "agent_cloud_memory.scripts.status:main"
 acm-cleanup = "agent_cloud_memory.scripts.cleanup:main"

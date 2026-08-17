@@ -76,6 +76,11 @@ acm sync --all         # Sync all detected frameworks
 acm sync --framework hermes --memories --skills
 acm sync --dry-run     # Preview without writing
 
+# Auto-Sync (Real-time)
+acm watch              # Watch for changes and auto-sync (primary framework)
+acm watch --all        # Watch all detected frameworks
+acm watch --framework hermes --verbose  # Watch Hermes with verbose output
+
 # Restore Operations
 acm restore --what=all # Restore everything
 acm restore --what=memories --framework hermes

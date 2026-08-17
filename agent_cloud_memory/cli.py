@@ -35,6 +35,19 @@ def main():
     sync_parser.add_argument("--dry-run", action="store_true", help="Preview without writing")
     sync_parser.add_argument("--json", action="store_true", help="Output JSON")
 
+    # watch
+    watch_parser = subparsers.add_parser("watch", help="Watch for changes and auto-sync")
+    watch_parser.add_argument(
+        "--framework", choices=framework_choices, help="Specific framework"
+    )
+    watch_parser.add_argument("--all", action="store_true", help="Watch all detected frameworks")
+    watch_parser.add_argument("--memories", action="store_true", help="Sync only memories")
+    watch_parser.add_argument("--sessions", action="store_true", help="Sync only sessions")
+    watch_parser.add_argument("--config", action="store_true", help="Sync only config")
+    watch_parser.add_argument("--skills", action="store_true", help="Sync only skills")
+    watch_parser.add_argument("--debounce", type=float, default=2.0, help="Debounce seconds (default: 2.0)")
+    watch_parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+
     # restore
     restore_parser = subparsers.add_parser("restore", help="Restore from cloud to local")
     restore_parser.add_argument(
@@ -88,6 +101,10 @@ def main():
         from agent_cloud_memory.scripts.sync import main as sync_main
         sys.argv = [sys.argv[0]] + sys.argv[2:]
         return sync_main()
+    elif args.command == "watch":
+        from agent_cloud_memory.scripts.watch import main as watch_main
+        sys.argv = [sys.argv[0]] + sys.argv[2:]
+        return watch_main()
     elif args.command == "restore":
         from agent_cloud_memory.scripts.restore import main as restore_main
         sys.argv = [sys.argv[0]] + sys.argv[2:]
