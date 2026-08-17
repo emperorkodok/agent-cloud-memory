@@ -38,7 +38,7 @@ hermes = ["hermes-agent"]
 openclaw = []
 claude-code = []
 codex = []
-dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "pytest-cov>=4.0", "ruff>=0.1", "mypy>=1.0"]
+dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "pytest-cov>=4.0", "ruff>=0.16", "mypy>=1.0"]
 all = ["hermes-agent"]
 
 [project.urls]
