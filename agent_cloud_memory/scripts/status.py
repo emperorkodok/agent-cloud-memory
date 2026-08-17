@@ -88,17 +88,21 @@ def main() -> int:
             profile = config["profile"]
 
             for table in ["memories", "sessions", "config_snapshots", "skill_snapshots"]:
-                cur = conn.execute(f"SELECT count(*) FROM {client.provider._schema}.{table} WHERE profile = %s", (profile,))
+                sql = f"SELECT count(*) FROM {client.provider._schema}.{table} WHERE profile = %s"
+                cur = conn.execute(sql, (profile,))
                 cloud_stats[table] = cur.fetchone()[0]
 
             # Last sync times
-            cur = conn.execute(f"SELECT MAX(synced_at) FROM {client.provider._schema}.sessions WHERE profile = %s", (profile,))
+            sql = f"SELECT MAX(synced_at) FROM {client.provider._schema}.sessions WHERE profile = %s"
+            cur = conn.execute(sql, (profile,))
             cloud_stats["last_session_sync"] = cur.fetchone()[0]
 
-            cur = conn.execute(f"SELECT MAX(synced_at) FROM {client.provider._schema}.skill_snapshots WHERE profile = %s", (profile,))
+            sql = f"SELECT MAX(synced_at) FROM {client.provider._schema}.skill_snapshots WHERE profile = %s"
+            cur = conn.execute(sql, (profile,))
             cloud_stats["last_skill_sync"] = cur.fetchone()[0]
 
-            cur = conn.execute(f"SELECT MAX(snapshot_at) FROM {client.provider._schema}.config_snapshots WHERE profile = %s", (profile,))
+            sql = f"SELECT MAX(snapshot_at) FROM {client.provider._schema}.config_snapshots WHERE profile = %s"
+            cur = conn.execute(sql, (profile,))
             cloud_stats["last_config_sync"] = cur.fetchone()[0]
     except Exception as e:
         cloud_stats["error"] = str(e)

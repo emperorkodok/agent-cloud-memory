@@ -63,7 +63,11 @@ def main():
 
         # Full sync to cloud
         result = adapter.full_sync(client)
-        print(f"   Synced: {result.memories_synced} memories, {result.sessions_synced} sessions, {result.skills_synced} skills")
+        print(
+            f"   Synced: {result.memories_synced} memories, "
+            f"{result.sessions_synced} sessions, "
+            f"{result.skills_synced} skills"
+        )
     else:
         print("   No framework detected")
 

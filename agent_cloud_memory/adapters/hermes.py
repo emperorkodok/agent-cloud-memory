@@ -15,8 +15,10 @@ from agent_cloud_memory.core import (
     CloudMemoryClient,
     ConfigSnapshot,
     MemoryEntry,
+    RestoreResult,
     SessionSnapshot,
     SkillSnapshot,
+    SyncResult,
 )
 
 
@@ -272,8 +274,6 @@ class HermesAdapter(FrameworkAdapter):
 
     def full_sync(self, client: CloudMemoryClient) -> SyncResult:
         """Perform full sync to cloud."""
-        from agent_cloud_memory.core import SyncResult
-
         result = SyncResult()
 
         # Sync memories
@@ -322,8 +322,6 @@ class HermesAdapter(FrameworkAdapter):
 
     def full_restore(self, client: CloudMemoryClient) -> RestoreResult:
         """Perform full restore from cloud."""
-        from agent_cloud_memory.core import RestoreResult
-
         result = RestoreResult()
 
         # Restore memories

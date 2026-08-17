@@ -432,15 +432,19 @@ class PostgreSQLBackend(MemoryProvider):
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
             if target:
-                cur = conn.execute(
-                    "SELECT id, target, content, metadata, created_at, updated_at, profile, session_id FROM memories WHERE profile = %s AND target = %s ORDER BY updated_at DESC LIMIT %s",
-                    (profile, target, limit),
+                sql = (
+                    "SELECT id, target, content, metadata, created_at, updated_at, "
+                    "profile, session_id FROM memories WHERE profile = %s AND target = %s "
+                    "ORDER BY updated_at DESC LIMIT %s"
                 )
+                cur = conn.execute(sql, (profile, target, limit))
             else:
-                cur = conn.execute(
-                    "SELECT id, target, content, metadata, created_at, updated_at, profile, session_id FROM memories WHERE profile = %s ORDER BY updated_at DESC LIMIT %s",
-                    (profile, limit),
+                sql = (
+                    "SELECT id, target, content, metadata, created_at, updated_at, "
+                    "profile, session_id FROM memories WHERE profile = %s "
+                    "ORDER BY updated_at DESC LIMIT %s"
                 )
+                cur = conn.execute(sql, (profile, limit))
             rows = cur.fetchall()
 
         return [
@@ -577,10 +581,11 @@ class PostgreSQLBackend(MemoryProvider):
 
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
-            cur = conn.execute(
-                "SELECT config_yaml, snapshot_at, hostname, device_id FROM config_snapshots WHERE profile = %s ORDER BY snapshot_at DESC LIMIT 1",
-                (profile,),
+            sql = (
+                "SELECT config_yaml, snapshot_at, hostname, device_id "
+                "FROM config_snapshots WHERE profile = %s ORDER BY snapshot_at DESC LIMIT 1"
             )
+            cur = conn.execute(sql, (profile,))
             row = cur.fetchone()
 
         if not row:
@@ -647,7 +652,14 @@ class CloudMemoryClient:
     def provider(self) -> MemoryProvider:
         return self._provider
 
-    def remember(self, content: str, target: str = "memory", profile: str | None = None, session_id: str | None = None, metadata: dict | None = None) -> str:
+    def remember(
+        self,
+        content: str,
+        target: str = "memory",
+        profile: str | None = None,
+        session_id: str | None = None,
+        metadata: dict | None = None,
+    ) -> str:
         """Store a memory entry."""
         if not self._initialized:
             self.initialize()

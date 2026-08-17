@@ -20,10 +20,11 @@ from agent_cloud_memory.core import CloudMemoryClient
 def prompt(prompt_text: str, default: str = "", secret: bool = False) -> str:
     """Prompt user for input."""
     suffix = f" [{default}]" if default else ""
-    if secret:
-        value = getpass.getpass(f"  {prompt_text}{suffix}: ")
-    else:
-        value = input(f"  {prompt_text}{suffix}: ").strip()
+    value = (
+        getpass.getpass(f"  {prompt_text}{suffix}: ")
+        if secret
+        else input(f"  {prompt_text}{suffix}: ").strip()
+    )
     return value or default
 
 
@@ -77,7 +78,8 @@ def main() -> int:
         profile = prompt("Profile name", default="default")
 
         print("\n📋 Step 2: Framework Detection")
-        auto_detect = prompt("Auto-detect frameworks (Hermes, OpenClaw, Claude Code, Codex)?", default="Y").lower() in ("y", "yes", "")
+        prompt_text = "Auto-detect frameworks (Hermes, OpenClaw, Claude Code, Codex)?"
+        auto_detect = prompt(prompt_text, default="Y").lower() in ("y", "yes", "")
 
     # Test connection
     print("\n🔌 Testing connection...")

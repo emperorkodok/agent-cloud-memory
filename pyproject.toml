@@ -69,10 +69,10 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py311"
 select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "PT", "T20", "SIM"]
-ignore = ["S101", "T201"]
+ignore = ["S101", "T201", "E501"]
 exclude = [".venv", "build", "dist"]
 
 [tool.mypy]

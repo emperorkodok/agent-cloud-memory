@@ -97,10 +97,14 @@ def main() -> int:
 
     # Determine what to sync
     sync_types = []
-    if args.memories: sync_types.append("memories")
-    if args.sessions: sync_types.append("sessions")
-    if args.config: sync_types.append("config")
-    if args.skills: sync_types.append("skills")
+    if args.memories:
+        sync_types.append("memories")
+    if args.sessions:
+        sync_types.append("sessions")
+    if args.config:
+        sync_types.append("config")
+    if args.skills:
+        sync_types.append("skills")
     if not sync_types:
         sync_types = ["memories", "sessions", "config", "skills"]
 
@@ -225,7 +229,12 @@ def main() -> int:
             "errors": total_result.errors,
         }, indent=2))
     else:
-        print(f"\n📊 Total: {total_result.memories_synced} memories, {total_result.sessions_synced} sessions, config: {total_result.config_synced}, {total_result.skills_synced} skills")
+        print(
+            f"\n📊 Total: {total_result.memories_synced} memories, "
+            f"{total_result.sessions_synced} sessions, "
+            f"config: {total_result.config_synced}, "
+            f"{total_result.skills_synced} skills"
+        )
         if total_result.errors:
             print(f"⚠ {len(total_result.errors)} errors occurred")
 

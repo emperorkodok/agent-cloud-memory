@@ -166,7 +166,10 @@ class CodexAdapter(FrameworkAdapter):
         if agents_md.exists():
             existing = agents_md.read_text(encoding="utf-8")
 
-        all_content = existing + ("\n\n" if existing else "") + "\n§\n".join(memory_entries) + "\n§\n"
+        separator = "\n§\n"
+        joined = separator.join(memory_entries)
+        prefix = "\n\n" if existing else ""
+        all_content = existing + prefix + joined + separator
         agents_md.write_text(all_content, encoding="utf-8")
 
         return len(memory_entries)

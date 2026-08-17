@@ -23,7 +23,10 @@ def main():
 
     # sync
     sync_parser = subparsers.add_parser("sync", help="Sync local frameworks to cloud")
-    sync_parser.add_argument("--framework", choices=["hermes", "openclaw", "claude-code", "codex"], help="Specific framework")
+    framework_choices = ["hermes", "openclaw", "claude-code", "codex"]
+    sync_parser.add_argument(
+        "--framework", choices=framework_choices, help="Specific framework"
+    )
     sync_parser.add_argument("--all", action="store_true", help="Sync all detected frameworks")
     sync_parser.add_argument("--memories", action="store_true", help="Sync only memories")
     sync_parser.add_argument("--sessions", action="store_true", help="Sync only sessions")
@@ -34,15 +37,28 @@ def main():
 
     # restore
     restore_parser = subparsers.add_parser("restore", help="Restore from cloud to local")
-    restore_parser.add_argument("--framework", choices=["hermes", "openclaw", "claude-code", "codex"], help="Specific framework")
-    restore_parser.add_argument("--what", choices=["memories", "config", "skills", "all"], default="all", help="What to restore")
-    restore_parser.add_argument("--dry-run", action="store_true", help="Preview without writing")
-    restore_parser.add_argument("--force", action="store_true", help="Overwrite without backup")
+    restore_parser.add_argument(
+        "--framework", choices=framework_choices, help="Specific framework"
+    )
+    restore_parser.add_argument(
+        "--what",
+        choices=["memories", "config", "skills", "all"],
+        default="all",
+        help="What to restore",
+    )
+    restore_parser.add_argument(
+        "--dry-run", action="store_true", help="Preview without writing"
+    )
+    restore_parser.add_argument(
+        "--force", action="store_true", help="Overwrite without backup"
+    )
     restore_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     # status
     status_parser = subparsers.add_parser("status", help="Show sync status")
-    status_parser.add_argument("--framework", choices=["hermes", "openclaw", "claude-code", "codex"], help="Specific framework")
+    status_parser.add_argument(
+        "--framework", choices=framework_choices, help="Specific framework"
+    )
     status_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     # cleanup

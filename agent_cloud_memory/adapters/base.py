@@ -98,7 +98,8 @@ class FrameworkDetector:
                                 display_name=framework.replace("-", " ").title(),
                                 config_dir=config_dir,
                                 data_dir=data_dir,
-                                confidence=confidence * (matched_files / max(len(patterns["files"]), 1) * 0.5 + 0.5),
+                                confidence=confidence
+                                * (matched_files / max(len(patterns["files"]), 1) * 0.5 + 0.5),
                             ))
 
         # Sort by confidence descending
