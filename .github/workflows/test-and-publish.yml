@@ -61,7 +61,7 @@ jobs:
 
       - name: Run tests
         env:
-          TEST_POSTGRES_DSN: postgresql://test:test@localhost:5432/test_agent_cloud_memory
+          TEST_POSTGRES_DSN: "postgresql://test:test@localhost:5432/test_agent_cloud_memory"
         run: |
           pytest tests/ -v --tb=short -x
 
