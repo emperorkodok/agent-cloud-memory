@@ -71,11 +71,11 @@ python_functions = ["test_*"]
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+exclude = [".venv", "build", "dist"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "PT", "T20", "SIM"]
-ignore = ["S101", "T201", "E501"]
-exclude = [".venv", "build", "dist"]
+ignore = ["S101", "T201", "E501", "PT001"]
 
 [tool.mypy]
 python_version = "3.11"
