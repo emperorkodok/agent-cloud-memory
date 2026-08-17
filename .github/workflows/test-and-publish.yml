@@ -67,7 +67,7 @@ jobs:
 
       - name: Lint
         run: |
-          ruff check .
+          ruff check . --config pyproject.toml
           mypy agent_cloud_memory/ --ignore-missing-imports
 
   build:
@@ -134,15 +134,15 @@ jobs:
           name: agent-cloud-memory ${{ github.ref_name }}
           body: |
             ## 🧠 agent-cloud-memory ${{ github.ref_name }}
-            
+
             Universal cloud memory layer for AI agents.
-            
+
             ### Installation
             ```bash
             pip install agent-cloud-memory
             acm-setup
             ```
-            
-            See [README](https://github.com/yourusername/agent-cloud-memory) for full docs.
+
+            See [README](https://github.com/emperorkodok/agent-cloud-memory) for full docs.
           files: dist/*
           draft: false
