@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
+import builtins
 import json
 import os
 import uuid
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-from contextlib import contextmanager
+from datetime import UTC, datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -30,13 +28,13 @@ class MemoryEntry(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:16])
     target: str = "memory"  # "memory" | "user" | "profile"
     content: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     profile: str = "default"
-    session_id: Optional[str] = None
+    session_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "target": self.target,
@@ -49,7 +47,7 @@ class MemoryEntry(BaseModel):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "MemoryEntry":
+    def from_dict(cls, data: dict[str, Any]) -> MemoryEntry:
         data = data.copy()
         for field_name in ("created_at", "updated_at"):
             if field_name in data and isinstance(data[field_name], str):
@@ -62,29 +60,29 @@ class SessionSnapshot(BaseModel):
     id: str
     source: str = "cli"
     profile: str = "default"
-    title: Optional[str] = None
-    model: Optional[str] = None
-    system_prompt: Optional[str] = None
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
+    title: str | None = None
+    model: str | None = None
+    system_prompt: str | None = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
     message_count: int = 0
     tool_call_count: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
-    cwd: Optional[str] = None
-    git_branch: Optional[str] = None
-    git_repo_root: Optional[str] = None
-    messages: List[Dict[str, Any]] = Field(default_factory=list)
-    synced_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    cwd: str | None = None
+    git_branch: str | None = None
+    git_repo_root: str | None = None
+    messages: list[dict[str, Any]] = Field(default_factory=list)
+    synced_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ConfigSnapshot(BaseModel):
     """Configuration snapshot."""
     profile: str = "default"
     config_yaml: str
-    snapshot_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    hostname: Optional[str] = None
-    device_id: Optional[str] = None
+    snapshot_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    hostname: str | None = None
+    device_id: str | None = None
 
 
 class SkillSnapshot(BaseModel):
@@ -94,7 +92,7 @@ class SkillSnapshot(BaseModel):
     skill_name: str
     content: str
     file_type: str = "SKILL.md"
-    synced_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    synced_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class SyncResult(BaseModel):
@@ -103,7 +101,7 @@ class SyncResult(BaseModel):
     sessions_synced: int = 0
     config_synced: bool = False
     skills_synced: int = 0
-    errors: List[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
 
 
 class RestoreResult(BaseModel):
@@ -112,90 +110,90 @@ class RestoreResult(BaseModel):
     sessions_restored: int = 0
     config_restored: bool = False
     skills_restored: int = 0
-    errors: List[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
 
 
 # ─── Core Abstract Interface ──────────────────────────────────────────────
 
 class MemoryProvider(ABC):
     """Abstract base class for memory backends."""
-    
+
     @property
     @abstractmethod
     def name(self) -> str:
         """Provider identifier."""
         pass
-    
+
     @abstractmethod
-    def initialize(self, config: Dict[str, Any]) -> None:
+    def initialize(self, config: dict[str, Any]) -> None:
         """Initialize the provider with configuration."""
         pass
-    
+
     @abstractmethod
     def is_available(self) -> bool:
         """Check if provider is configured and ready."""
         pass
-    
+
     @abstractmethod
     def remember(self, entry: MemoryEntry) -> str:
         """Store a memory entry. Returns entry ID."""
         pass
-    
+
     @abstractmethod
-    def search(self, query: str, top_k: int = 10, profile: Optional[str] = None) -> List[MemoryEntry]:
+    def search(self, query: str, top_k: int = 10, profile: str | None = None) -> list[MemoryEntry]:
         """Search memories by semantic query."""
         pass
-    
+
     @abstractmethod
-    def forget(self, memory_id: str, profile: Optional[str] = None) -> bool:
+    def forget(self, memory_id: str, profile: str | None = None) -> bool:
         """Delete a memory by ID."""
         pass
-    
+
     @abstractmethod
-    def list_memories(self, profile: Optional[str] = None, target: Optional[str] = None, limit: int = 100) -> List[MemoryEntry]:
+    def list_memories(self, profile: str | None = None, target: str | None = None, limit: int = 100) -> list[MemoryEntry]:
         """List memories with optional filters."""
         pass
-    
+
     @abstractmethod
-    def get_profile(self, profile: Optional[str] = None) -> List[MemoryEntry]:
+    def get_profile(self, profile: str | None = None) -> list[MemoryEntry]:
         """Get user profile memories."""
         pass
-    
+
     @abstractmethod
     def sync_session(self, session: SessionSnapshot) -> bool:
         """Sync a session snapshot."""
         pass
-    
+
     @abstractmethod
     def sync_config(self, config: ConfigSnapshot) -> bool:
         """Sync configuration snapshot."""
         pass
-    
+
     @abstractmethod
     def sync_skill(self, skill: SkillSnapshot) -> bool:
         """Sync skill snapshot."""
         pass
-    
+
     @abstractmethod
     def sync_turn(self, user_content: str, assistant_content: str, session_id: str, profile: str) -> None:
         """Sync a conversation turn (real-time)."""
         pass
-    
+
     @abstractmethod
-    def restore_memories(self, profile: Optional[str] = None) -> List[MemoryEntry]:
+    def restore_memories(self, profile: str | None = None) -> list[MemoryEntry]:
         """Restore all memories from cloud."""
         pass
-    
+
     @abstractmethod
-    def restore_config(self, profile: Optional[str] = None) -> Optional[ConfigSnapshot]:
+    def restore_config(self, profile: str | None = None) -> ConfigSnapshot | None:
         """Restore latest config."""
         pass
-    
+
     @abstractmethod
-    def restore_skills(self, profile: Optional[str] = None) -> List[SkillSnapshot]:
+    def restore_skills(self, profile: str | None = None) -> list[SkillSnapshot]:
         """Restore all skills."""
         pass
-    
+
     @abstractmethod
     def close(self) -> None:
         """Close connections and cleanup."""
@@ -222,7 +220,7 @@ SCHEMA_SQL = [
     "CREATE INDEX IF NOT EXISTS idx_memories_profile ON memories(profile)",
     "CREATE INDEX IF NOT EXISTS idx_memories_session ON memories(session_id)",
     "CREATE INDEX IF NOT EXISTS idx_memories_content_gin ON memories USING gin(to_tsvector('english', content))",
-    
+
     # Sessions table
     """
     CREATE TABLE IF NOT EXISTS sessions (
@@ -247,7 +245,7 @@ SCHEMA_SQL = [
     """,
     "CREATE INDEX IF NOT EXISTS idx_sessions_profile ON sessions(profile)",
     "CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at DESC)",
-    
+
     # Config snapshots
     """
     CREATE TABLE IF NOT EXISTS config_snapshots (
@@ -261,7 +259,7 @@ SCHEMA_SQL = [
     """,
     "CREATE INDEX IF NOT EXISTS idx_config_profile ON config_snapshots(profile)",
     "CREATE INDEX IF NOT EXISTS idx_config_time ON config_snapshots(snapshot_at DESC)",
-    
+
     # Skill snapshots
     """
     CREATE TABLE IF NOT EXISTS skill_snapshots (
@@ -290,41 +288,40 @@ def _parse_metadata(value):
 
 class PostgreSQLBackend(MemoryProvider):
     """PostgreSQL cloud memory backend."""
-    
+
     def __init__(self):
-        self._dsn: Optional[str] = None
+        self._dsn: str | None = None
         self._schema: str = "agent_cloud_memory"
         self._pool = None
         self._profile: str = "default"
         self._initialized: bool = False
-    
+
     @property
     def name(self) -> str:
         return "postgresql"
-    
-    def initialize(self, config: Dict[str, Any]) -> None:
+
+    def initialize(self, config: dict[str, Any]) -> None:
         self._dsn = config.get("dsn") or os.environ.get("ACM_POSTGRES_DSN") or os.environ.get("POSTGRES_DSN")
         self._schema = config.get("schema", "agent_cloud_memory")
         self._profile = config.get("profile", "default")
-        
+
         if not self._dsn:
             raise ValueError("PostgreSQL DSN required. Set ACM_POSTGRES_DSN or pass in config.")
-        
+
         self._init_pool()
         self._ensure_schema()
         self._initialized = True
-    
+
     def _init_pool(self):
-        import psycopg
         from psycopg_pool import ConnectionPool
-        
+
         self._pool = ConnectionPool(
             conninfo=self._dsn,
             min_size=1,
             max_size=5,
             timeout=30,
         )
-    
+
     def _ensure_schema(self):
         with self._pool.connection() as conn:
             conn.execute(f"CREATE SCHEMA IF NOT EXISTS {self._schema}")
@@ -332,7 +329,7 @@ class PostgreSQLBackend(MemoryProvider):
             for stmt in SCHEMA_SQL:
                 conn.execute(stmt)
             conn.commit()
-    
+
     def is_available(self) -> bool:
         if not self._dsn:
             return False
@@ -342,12 +339,12 @@ class PostgreSQLBackend(MemoryProvider):
             except Exception:
                 return False
         return True
-    
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
     def remember(self, entry: MemoryEntry) -> str:
         if not self._initialized:
             self.initialize({})
-        
+
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
             conn.execute(
@@ -372,14 +369,14 @@ class PostgreSQLBackend(MemoryProvider):
             )
             conn.commit()
         return entry.id
-    
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
-    def search(self, query: str, top_k: int = 10, profile: Optional[str] = None) -> List[MemoryEntry]:
+    def search(self, query: str, top_k: int = 10, profile: str | None = None) -> list[MemoryEntry]:
         if not self._initialized:
             self.initialize({})
-        
+
         profile = profile or self._profile
-        
+
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
             cur = conn.execute(
@@ -395,7 +392,7 @@ class PostgreSQLBackend(MemoryProvider):
                 (query, profile, query, top_k),
             )
             rows = cur.fetchall()
-        
+
         return [
             MemoryEntry(
                 id=row[0],
@@ -409,14 +406,14 @@ class PostgreSQLBackend(MemoryProvider):
             )
             for row in rows
         ]
-    
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
-    def forget(self, memory_id: str, profile: Optional[str] = None) -> bool:
+    def forget(self, memory_id: str, profile: str | None = None) -> bool:
         if not self._initialized:
             self.initialize({})
-        
+
         profile = profile or self._profile
-        
+
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
             cur = conn.execute(
@@ -425,13 +422,13 @@ class PostgreSQLBackend(MemoryProvider):
             )
             conn.commit()
             return cur.rowcount > 0
-    
-    def list_memories(self, profile: Optional[str] = None, target: Optional[str] = None, limit: int = 100) -> List[MemoryEntry]:
+
+    def list_memories(self, profile: str | None = None, target: str | None = None, limit: int = 100) -> list[MemoryEntry]:
         if not self._initialized:
             self.initialize({})
-        
+
         profile = profile or self._profile
-        
+
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
             if target:
@@ -445,7 +442,7 @@ class PostgreSQLBackend(MemoryProvider):
                     (profile, limit),
                 )
             rows = cur.fetchall()
-        
+
         return [
             MemoryEntry(
                 id=row[0],
@@ -459,14 +456,14 @@ class PostgreSQLBackend(MemoryProvider):
             )
             for row in rows
         ]
-    
-    def get_profile(self, profile: Optional[str] = None) -> List[MemoryEntry]:
+
+    def get_profile(self, profile: str | None = None) -> list[MemoryEntry]:
         return self.list_memories(profile=profile or self._profile, target="user", limit=50)
-    
+
     def sync_session(self, session: SessionSnapshot) -> bool:
         if not self._initialized:
             self.initialize({})
-        
+
         import json
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
@@ -511,11 +508,11 @@ class PostgreSQLBackend(MemoryProvider):
             )
             conn.commit()
         return True
-    
+
     def sync_config(self, config: ConfigSnapshot) -> bool:
         if not self._initialized:
             self.initialize({})
-        
+
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
             conn.execute(
@@ -527,11 +524,11 @@ class PostgreSQLBackend(MemoryProvider):
             )
             conn.commit()
         return True
-    
+
     def sync_skill(self, skill: SkillSnapshot) -> bool:
         if not self._initialized:
             self.initialize({})
-        
+
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
             conn.execute(
@@ -547,12 +544,12 @@ class PostgreSQLBackend(MemoryProvider):
             )
             conn.commit()
         return True
-    
+
     def sync_turn(self, user_content: str, assistant_content: str, session_id: str, profile: str) -> None:
         """Real-time turn sync - store as memories."""
         if not user_content:
             return
-        
+
         # Store user message as memory
         self.remember(MemoryEntry(
             target="memory",
@@ -560,7 +557,7 @@ class PostgreSQLBackend(MemoryProvider):
             profile=profile,
             session_id=session_id,
         ))
-        
+
         if assistant_content:
             self.remember(MemoryEntry(
                 target="memory",
@@ -568,16 +565,16 @@ class PostgreSQLBackend(MemoryProvider):
                 profile=profile,
                 session_id=session_id,
             ))
-    
-    def restore_memories(self, profile: Optional[str] = None) -> List[MemoryEntry]:
+
+    def restore_memories(self, profile: str | None = None) -> list[MemoryEntry]:
         return self.list_memories(profile=profile or self._profile, limit=10000)
-    
-    def restore_config(self, profile: Optional[str] = None) -> Optional[ConfigSnapshot]:
+
+    def restore_config(self, profile: str | None = None) -> ConfigSnapshot | None:
         if not self._initialized:
             self.initialize({})
-        
+
         profile = profile or self._profile
-        
+
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
             cur = conn.execute(
@@ -585,10 +582,10 @@ class PostgreSQLBackend(MemoryProvider):
                 (profile,),
             )
             row = cur.fetchone()
-        
+
         if not row:
             return None
-        
+
         return ConfigSnapshot(
             profile=profile,
             config_yaml=row[0],
@@ -596,13 +593,13 @@ class PostgreSQLBackend(MemoryProvider):
             hostname=row[2],
             device_id=row[3],
         )
-    
-    def restore_skills(self, profile: Optional[str] = None) -> List[SkillSnapshot]:
+
+    def restore_skills(self, profile: str | None = None) -> list[SkillSnapshot]:
         if not self._initialized:
             self.initialize({})
-        
+
         profile = profile or self._profile
-        
+
         with self._pool.connection() as conn:
             conn.execute(f"SET search_path TO {self._schema}")
             cur = conn.execute(
@@ -610,7 +607,7 @@ class PostgreSQLBackend(MemoryProvider):
                 (profile,),
             )
             rows = cur.fetchall()
-        
+
         return [
             SkillSnapshot(
                 profile=profile,
@@ -622,7 +619,7 @@ class PostgreSQLBackend(MemoryProvider):
             )
             for row in rows
         ]
-    
+
     def close(self) -> None:
         if self._pool:
             self._pool.close()
@@ -634,27 +631,27 @@ class PostgreSQLBackend(MemoryProvider):
 
 class CloudMemoryClient:
     """High-level client for cloud memory operations."""
-    
-    def __init__(self, provider: Optional[MemoryProvider] = None, config: Optional[Dict[str, Any]] = None):
+
+    def __init__(self, provider: MemoryProvider | None = None, config: dict[str, Any] | None = None):
         self._provider = provider or PostgreSQLBackend()
         self._config = config or {}
         self._initialized = False
-    
-    def initialize(self, config: Optional[Dict[str, Any]] = None) -> None:
+
+    def initialize(self, config: dict[str, Any] | None = None) -> None:
         if config:
             self._config.update(config)
         self._provider.initialize(self._config)
         self._initialized = True
-    
+
     @property
     def provider(self) -> MemoryProvider:
         return self._provider
-    
-    def remember(self, content: str, target: str = "memory", profile: Optional[str] = None, session_id: Optional[str] = None, metadata: Optional[Dict] = None) -> str:
+
+    def remember(self, content: str, target: str = "memory", profile: str | None = None, session_id: str | None = None, metadata: dict | None = None) -> str:
         """Store a memory entry."""
         if not self._initialized:
             self.initialize()
-        
+
         entry = MemoryEntry(
             target=target,
             content=content,
@@ -663,82 +660,82 @@ class CloudMemoryClient:
             metadata=metadata or {},
         )
         return self._provider.remember(entry)
-    
-    def search(self, query: str, top_k: int = 10, profile: Optional[str] = None) -> List[MemoryEntry]:
+
+    def search(self, query: str, top_k: int = 10, profile: str | None = None) -> builtins.list[MemoryEntry]:
         """Search memories."""
         if not self._initialized:
             self.initialize()
         return self._provider.search(query, top_k, profile)
-    
-    def forget(self, memory_id: str, profile: Optional[str] = None) -> bool:
+
+    def forget(self, memory_id: str, profile: str | None = None) -> bool:
         """Delete a memory."""
         if not self._initialized:
             self.initialize()
         return self._provider.forget(memory_id, profile)
-    
-    def list(self, profile: Optional[str] = None, target: Optional[str] = None, limit: int = 100) -> List[MemoryEntry]:
+
+    def list(self, profile: str | None = None, target: str | None = None, limit: int = 100) -> builtins.list[MemoryEntry]:
         """List memories."""
         if not self._initialized:
             self.initialize()
         return self._provider.list_memories(profile, target, limit)
-    
-    def profile(self, profile: Optional[str] = None) -> List[MemoryEntry]:
+
+    def profile(self, profile: str | None = None) -> builtins.list[MemoryEntry]:
         """Get user profile."""
         if not self._initialized:
             self.initialize()
         return self._provider.get_profile(profile)
-    
+
     def sync_session(self, session: SessionSnapshot) -> bool:
         if not self._initialized:
             self.initialize()
         return self._provider.sync_session(session)
-    
+
     def sync_config(self, config: ConfigSnapshot) -> bool:
         if not self._initialized:
             self.initialize()
         return self._provider.sync_config(config)
-    
+
     def sync_skill(self, skill: SkillSnapshot) -> bool:
         if not self._initialized:
             self.initialize()
         return self._provider.sync_skill(skill)
-    
+
     def sync_turn(self, user_content: str, assistant_content: str, session_id: str, profile: str) -> None:
         if not self._initialized:
             self.initialize()
         self._provider.sync_turn(user_content, assistant_content, session_id, profile)
-    
-    def restore_memories(self, profile: Optional[str] = None) -> List[MemoryEntry]:
+
+    def restore_memories(self, profile: str | None = None) -> builtins.list[MemoryEntry]:
         if not self._initialized:
             self.initialize()
         return self._provider.restore_memories(profile)
-    
-    def restore_config(self, profile: Optional[str] = None) -> Optional[ConfigSnapshot]:
+
+    def restore_config(self, profile: str | None = None) -> ConfigSnapshot | None:
         if not self._initialized:
             self.initialize()
         return self._provider.restore_config(profile)
-    
-    def restore_skills(self, profile: Optional[str] = None) -> List[SkillSnapshot]:
+
+    def restore_skills(self, profile: str | None = None) -> builtins.list[SkillSnapshot]:
         if not self._initialized:
             self.initialize()
         return self._provider.restore_skills(profile)
-    
-    def full_sync(self, profile: Optional[str] = None) -> SyncResult:
+
+    def full_sync(self, profile: str | None = None) -> SyncResult:
         """Perform a full sync of all local state to cloud."""
         # This would be implemented by adapters
         raise NotImplementedError("Full sync requires framework-specific adapter")
-    
-    def full_restore(self, profile: Optional[str] = None) -> RestoreResult:
+
+    def full_restore(self, profile: str | None = None) -> RestoreResult:
         """Perform a full restore from cloud to local."""
         # This would be implemented by adapters
         raise NotImplementedError("Full restore requires framework-specific adapter")
-    
+
     def close(self) -> None:
         self._provider.close()
         self._initialized = False
-    
-    def __enter__(self) -> "CloudMemoryClient":
+
+    def __enter__(self) -> CloudMemoryClient:
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.close()

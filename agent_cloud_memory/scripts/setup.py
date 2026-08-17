@@ -44,14 +44,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="agent-cloud-memory setup wizard")
     parser.add_argument("--non-interactive", action="store_true", help="Skip prompts, use env vars")
     args = parser.parse_args()
-    
+
     print("""
 ╔══════════════════════════════════════════════════════════════╗
 ║         agent-cloud-memory - Setup Wizard                    ║
 ║     Universal cloud memory for AI agents                     ║
 ╚══════════════════════════════════════════════════════════════╝
 """)
-    
+
     # Get configuration
     if args.non_interactive:
         dsn = os.environ.get("ACM_POSTGRES_DSN") or os.environ.get("POSTGRES_DSN")
@@ -67,18 +67,18 @@ def main() -> int:
         print("     Railway:   postgresql://postgres:***@containers-xxx.railway.app:5432/railway?sslmode=require")
         print("     Local:     postgresql://user:***@localhost:5432/agent_memory?sslmode=require")
         print()
-        
+
         dsn = prompt("PostgreSQL DSN", secret=True)
         if not dsn:
             print("  ✗ DSN is required")
             return 1
-        
+
         schema = prompt("Database schema", default="agent_cloud_memory")
         profile = prompt("Profile name", default="default")
-        
+
         print("\n📋 Step 2: Framework Detection")
         auto_detect = prompt("Auto-detect frameworks (Hermes, OpenClaw, Claude Code, Codex)?", default="Y").lower() in ("y", "yes", "")
-    
+
     # Test connection
     print("\n🔌 Testing connection...")
     if not test_connection(dsn):
@@ -89,7 +89,7 @@ def main() -> int:
         print("  ⚠ Continuing without verified connection...")
     else:
         print("  ✓ Connection successful!")
-    
+
     # Initialize client and create schema
     print("\n📦 Initializing database schema...")
     try:
@@ -103,12 +103,12 @@ def main() -> int:
     except Exception as e:
         print(f"  ✗ Failed to initialize: {e}")
         return 1
-    
+
     # Save configuration
     print("\n💾 Saving configuration...")
     config_dir = Path.home() / ".config" / "agent-cloud-memory"
     config_dir.mkdir(parents=True, exist_ok=True)
-    
+
     config = {
         "postgresql": {
             "dsn": dsn,
@@ -117,7 +117,7 @@ def main() -> int:
         "profile": profile,
         "auto_detect": auto_detect,
     }
-    
+
     config_file = config_dir / "config.yaml"
     if yaml:
         config_file.write_text(yaml.dump(config, sort_keys=False), encoding="utf-8")
@@ -132,32 +132,32 @@ def main() -> int:
             else:
                 lines.append(f"{key}: {value}")
         config_file.write_text("\n".join(lines), encoding="utf-8")
-    
+
     # Save DSN to environment file (secure)
     env_file = config_dir / ".env"
     env_content = f"ACM_POSTGRES_DSN={dsn}\nACM_POSTGRES_SCHEMA={schema}\nACM_PROFILE={profile}\n"
     env_file.write_text(env_content, encoding="utf-8")
     env_file.chmod(0o600)
-    
+
     print(f"  ✓ Config saved to {config_file}")
     print(f"  ✓ Secrets saved to {env_file} (chmod 600)")
-    
+
     # Auto-detect frameworks
     if auto_detect:
         print("\n🔍 Detecting frameworks...")
-        from agent_cloud_memory.adapters import FrameworkDetector, get_adapter_for_path
-        
+        from agent_cloud_memory.adapters import FrameworkDetector
+
         detected = FrameworkDetector.detect_all([Path.home()])
         if detected:
             print("  Found frameworks:")
             for fw in detected:
                 print(f"    • {fw.display_name} ({fw.confidence:.0%}) at {fw.config_dir}")
-            
+
             if not args.non_interactive:
                 print("\n  Run 'acm sync' to sync all detected frameworks to cloud.")
         else:
             print("  No frameworks detected. You can still use the library programmatically.")
-    
+
     print("""
 ╔══════════════════════════════════════════════════════════════╗
 ║                    Setup Complete! 🎉                         ║

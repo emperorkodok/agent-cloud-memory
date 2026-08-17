@@ -14,13 +14,13 @@ def main():
         description="agent-cloud-memory - Universal cloud memory for AI agents",
     )
     parser.add_argument("--version", action="version", version="%(prog)s 0.1.0")
-    
+
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
-    
+
     # setup
     setup_parser = subparsers.add_parser("setup", help="Interactive setup wizard")
     setup_parser.add_argument("--non-interactive", action="store_true", help="Use env vars only")
-    
+
     # sync
     sync_parser = subparsers.add_parser("sync", help="Sync local frameworks to cloud")
     sync_parser.add_argument("--framework", choices=["hermes", "openclaw", "claude-code", "codex"], help="Specific framework")
@@ -31,7 +31,7 @@ def main():
     sync_parser.add_argument("--skills", action="store_true", help="Sync only skills")
     sync_parser.add_argument("--dry-run", action="store_true", help="Preview without writing")
     sync_parser.add_argument("--json", action="store_true", help="Output JSON")
-    
+
     # restore
     restore_parser = subparsers.add_parser("restore", help="Restore from cloud to local")
     restore_parser.add_argument("--framework", choices=["hermes", "openclaw", "claude-code", "codex"], help="Specific framework")
@@ -39,12 +39,12 @@ def main():
     restore_parser.add_argument("--dry-run", action="store_true", help="Preview without writing")
     restore_parser.add_argument("--force", action="store_true", help="Overwrite without backup")
     restore_parser.add_argument("--json", action="store_true", help="Output JSON")
-    
+
     # status
     status_parser = subparsers.add_parser("status", help="Show sync status")
     status_parser.add_argument("--framework", choices=["hermes", "openclaw", "claude-code", "codex"], help="Specific framework")
     status_parser.add_argument("--json", action="store_true", help="Output JSON")
-    
+
     # cleanup
     cleanup_parser = subparsers.add_parser("cleanup", help="Clean up old sessions")
     cleanup_parser.add_argument("--days", type=int, default=30, help="Delete sessions older than N days")
@@ -52,17 +52,17 @@ def main():
     cleanup_parser.add_argument("--vacuum", action="store_true", help="Run VACUUM ANALYZE")
     cleanup_parser.add_argument("--dry-run", action="store_true", help="Preview without deleting")
     cleanup_parser.add_argument("--json", action="store_true", help="Output JSON")
-    
+
     # detect
     detect_parser = subparsers.add_parser("detect", help="Detect installed frameworks")
     detect_parser.add_argument("--json", action="store_true", help="Output JSON")
-    
+
     args = parser.parse_args()
-    
+
     if not args.command:
         parser.print_help()
         return 0
-    
+
     # Dispatch to subcommand modules
     if args.command == "setup":
         from agent_cloud_memory.scripts.setup import main as setup_main
@@ -107,7 +107,7 @@ def main():
                 for fw in detected:
                     print(f"  • {fw.display_name} ({fw.name}) - {fw.confidence:.0%} at {fw.config_dir}")
         return 0
-    
+
     return 0
 
 

@@ -2,23 +2,19 @@
 
 from __future__ import annotations
 
-import json
-import os
 import socket
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 from agent_cloud_memory.adapters.base import FrameworkAdapter, register_adapter
 from agent_cloud_memory.core import (
-    MemoryEntry,
-    SessionSnapshot,
-    ConfigSnapshot,
-    SkillSnapshot,
     CloudMemoryClient,
-    SyncResult,
+    ConfigSnapshot,
+    MemoryEntry,
     RestoreResult,
+    SessionSnapshot,
+    SkillSnapshot,
+    SyncResult,
 )
 
 
@@ -33,15 +29,15 @@ def _get_hostname() -> str:
 @register_adapter
 class OpenClawAdapter(FrameworkAdapter):
     """Adapter for OpenClaw / ClawBot."""
-    
+
     FRAMEWORK_NAME = "openclaw"
     DISPLAY_NAME = "OpenClaw"
-    
+
     MEMORY_FILES = ["MEMORY.md", "USER.md", "SOUL.md", "AGENTS.md"]
     CONFIG_FILES = ["workspace.json", "config.yaml", "config.yml"]
     SKILL_DIRS = ["skills", "workspace/skills"]
-    
-    def __init__(self, config_dir: Path, data_dir: Optional[Path] = None):
+
+    def __init__(self, config_dir: Path, data_dir: Path | None = None):
         super().__init__(config_dir, data_dir)
         self._workspace_dir = config_dir / "workspace"
         self._skills_dirs = [
@@ -49,18 +45,18 @@ class OpenClawAdapter(FrameworkAdapter):
             config_dir / "workspace" / "skills",
         ]
         self._memories_dir = config_dir / "memories"
-    
-    def load_memories(self) -> List[MemoryEntry]:
+
+    def load_memories(self) -> list[MemoryEntry]:
         """Load memories from OpenClaw format."""
         entries = []
-        
+
         # Load from memory files in root
         for filename, target in [("MEMORY.md", "memory"), ("USER.md", "user"), ("SOUL.md", "profile")]:
             filepath = self.config_dir / filename
             if filepath.exists():
                 file_entries = self.parse_memory_file(filepath, target)
                 entries.extend(file_entries)
-        
+
         # Load from memories/ subdirectory (daily memories)
         if self._memories_dir.exists():
             for md_file in sorted(self._memories_dir.glob("*.md")):
@@ -71,7 +67,7 @@ class OpenClawAdapter(FrameworkAdapter):
                 for entry in file_entries:
                     entry.metadata["openclaw_date_file"] = md_file.stem
                 entries.extend(file_entries)
-        
+
         # Load AGENTS.md as workspace instructions
         agents_file = self.config_dir / "AGENTS.md"
         if agents_file.exists():
@@ -84,7 +80,7 @@ class OpenClawAdapter(FrameworkAdapter):
                     profile="default",
                     metadata={"source": "AGENTS.md", "type": "workspace_instructions"},
                 ))
-        
+
         # Deduplicate
         seen = set()
         unique = []
@@ -93,10 +89,10 @@ class OpenClawAdapter(FrameworkAdapter):
             if content_hash not in seen:
                 seen.add(content_hash)
                 unique.append(entry)
-        
+
         return unique
-    
-    def load_config(self) -> Optional[ConfigSnapshot]:
+
+    def load_config(self) -> ConfigSnapshot | None:
         """Load OpenClaw configuration."""
         # Try workspace.json first
         workspace_json = self.config_dir / "workspace.json"
@@ -111,7 +107,7 @@ class OpenClawAdapter(FrameworkAdapter):
                 )
             except Exception:
                 pass
-        
+
         # Try config.yaml
         for name in ["config.yaml", "config.yml"]:
             config_path = self.config_dir / name
@@ -126,23 +122,23 @@ class OpenClawAdapter(FrameworkAdapter):
                     )
                 except Exception:
                     pass
-        
+
         return None
-    
-    def load_skills(self) -> List[SkillSnapshot]:
+
+    def load_skills(self) -> list[SkillSnapshot]:
         """Load skills from OpenClaw skills directories."""
         skills = []
-        
+
         for skills_dir in self._skills_dirs:
             if not skills_dir.exists():
                 continue
-            
+
             for skill_md in skills_dir.rglob("SKILL.md"):
                 try:
                     rel_path = skill_md.relative_to(skills_dir)
                     skill_name = skill_md.parent.name
                     content = skill_md.read_text(encoding="utf-8")
-                    
+
                     skills.append(SkillSnapshot(
                         profile="default",
                         skill_path=rel_path.as_posix(),  # Cross-platform path
@@ -152,44 +148,44 @@ class OpenClawAdapter(FrameworkAdapter):
                     ))
                 except Exception:
                     continue
-        
+
         return skills
-    
-    def load_sessions(self) -> List[SessionSnapshot]:
+
+    def load_sessions(self) -> list[SessionSnapshot]:
         """OpenClaw doesn't have a session store like Hermes."""
         return []
-    
-    def write_memories(self, entries: List[MemoryEntry]) -> int:
+
+    def write_memories(self, entries: list[MemoryEntry]) -> int:
         """Write memories to OpenClaw format."""
         memory_entries = [e.content for e in entries if e.target == "memory"]
         user_entries = [e.content for e in entries if e.target == "user"]
         profile_entries = [e.content for e in entries if e.target == "profile"]
-        
+
         count = 0
-        
+
         if memory_entries:
             (self.config_dir / "MEMORY.md").write_text(
                 "\n§\n".join(memory_entries) + "\n§\n",
                 encoding="utf-8"
             )
             count += len(memory_entries)
-        
+
         if user_entries:
             (self.config_dir / "USER.md").write_text(
                 "\n§\n".join(user_entries) + "\n§\n",
                 encoding="utf-8"
             )
             count += len(user_entries)
-        
+
         if profile_entries:
             (self.config_dir / "SOUL.md").write_text(
                 "\n§\n".join(profile_entries) + "\n§\n",
                 encoding="utf-8"
             )
             count += len(profile_entries)
-        
+
         return count
-    
+
     def write_config(self, config: ConfigSnapshot) -> bool:
         """Write config as workspace.json."""
         try:
@@ -197,12 +193,12 @@ class OpenClawAdapter(FrameworkAdapter):
             return True
         except Exception:
             return False
-    
-    def write_skills(self, skills: List[SkillSnapshot]) -> int:
+
+    def write_skills(self, skills: list[SkillSnapshot]) -> int:
         """Write skills to primary skills directory."""
         count = 0
         primary_skills_dir = self._skills_dirs[0]  # config_dir/skills
-        
+
         for skill in skills:
             try:
                 # Convert forward slashes to platform-specific paths
@@ -212,17 +208,17 @@ class OpenClawAdapter(FrameworkAdapter):
                 count += 1
             except Exception:
                 continue
-        
+
         return count
-    
+
     def get_profile_identifier(self) -> str:
         """Get OpenClaw identifier."""
         return "default"
-    
+
     def full_sync(self, client: CloudMemoryClient) -> SyncResult:
         """Perform full sync to cloud."""
         result = SyncResult()
-        
+
         # Sync memories
         memories = self.load_memories()
         for entry in memories:
@@ -237,7 +233,7 @@ class OpenClawAdapter(FrameworkAdapter):
                 result.memories_synced += 1
             except Exception as e:
                 result.errors.append(f"Memory sync error: {e}")
-        
+
         # Sync config
         config = self.load_config()
         if config:
@@ -246,7 +242,7 @@ class OpenClawAdapter(FrameworkAdapter):
                 result.config_synced = True
             except Exception as e:
                 result.errors.append(f"Config sync error: {e}")
-        
+
         # Sync skills
         skills = self.load_skills()
         for skill in skills:
@@ -255,18 +251,18 @@ class OpenClawAdapter(FrameworkAdapter):
                 result.skills_synced += 1
             except Exception as e:
                 result.errors.append(f"Skill sync error: {e}")
-        
+
         return result
-    
+
     def full_restore(self, client: CloudMemoryClient) -> RestoreResult:
         """Perform full restore from cloud."""
         result = RestoreResult()
-        
+
         # Restore memories
         memories = client.restore_memories()
         self.write_memories(memories)
         result.memories_restored = len(memories)
-        
+
         # Restore config
         config = client.restore_config()
         if config:
@@ -275,10 +271,10 @@ class OpenClawAdapter(FrameworkAdapter):
                 result.config_restored = True
             except Exception as e:
                 result.errors.append(f"Config restore error: {e}")
-        
+
         # Restore skills
         skills = client.restore_skills()
         self.write_skills(skills)
         result.skills_restored = len(skills)
-        
+
         return result

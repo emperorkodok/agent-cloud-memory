@@ -6,43 +6,39 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 from agent_cloud_memory.adapters.base import FrameworkAdapter, register_adapter
 from agent_cloud_memory.core import (
+    ConfigSnapshot,
     MemoryEntry,
     SessionSnapshot,
-    ConfigSnapshot,
     SkillSnapshot,
-    CloudMemoryClient,
-    SyncResult,
-    RestoreResult,
 )
 
 
 @register_adapter
 class MyCustomAgentAdapter(FrameworkAdapter):
     """Adapter for MyCustomAgent framework."""
-    
+
     FRAMEWORK_NAME = "my-custom-agent"
     DISPLAY_NAME = "My Custom Agent"
-    
+
     # File patterns this adapter handles
     MEMORY_FILES = ["memory.json", "user_prefs.json"]
     CONFIG_FILES = ["config.json"]
     SKILL_DIRS = ["plugins"]
-    
-    def __init__(self, config_dir: Path, data_dir: Optional[Path] = None):
+
+    def __init__(self, config_dir: Path, data_dir: Path | None = None):
         super().__init__(config_dir, data_dir)
         self._memory_file = config_dir / "memory.json"
         self._user_prefs_file = config_dir / "user_prefs.json"
         self._config_file = config_dir / "config.json"
         self._plugins_dir = config_dir / "plugins"
-    
-    def load_memories(self) -> List[MemoryEntry]:
+
+    def load_memories(self) -> list[MemoryEntry]:
         """Load memories from custom JSON format."""
         entries = []
-        
+
         # Load memory.json
         if self._memory_file.exists():
             try:
@@ -57,7 +53,7 @@ class MyCustomAgentAdapter(FrameworkAdapter):
                     ))
             except Exception:
                 pass
-        
+
         # Load user_prefs.json
         if self._user_prefs_file.exists():
             try:
@@ -72,14 +68,14 @@ class MyCustomAgentAdapter(FrameworkAdapter):
                     ))
             except Exception:
                 pass
-        
+
         return entries
-    
-    def load_config(self) -> Optional[ConfigSnapshot]:
+
+    def load_config(self) -> ConfigSnapshot | None:
         """Load config from config.json."""
         if not self._config_file.exists():
             return None
-        
+
         try:
             text = self._config_file.read_text()
             import yaml
@@ -91,20 +87,20 @@ class MyCustomAgentAdapter(FrameworkAdapter):
             )
         except Exception:
             pass
-        
+
         return None
-    
-    def load_skills(self) -> List[SkillSnapshot]:
+
+    def load_skills(self) -> list[SkillSnapshot]:
         """Load plugins as skills."""
         skills = []
-        
+
         if not self._plugins_dir.exists():
             return skills
-        
+
         for plugin_dir in self._plugins_dir.iterdir():
             if not plugin_dir.is_dir():
                 continue
-            
+
             # Look for plugin manifest
             manifest = plugin_dir / "manifest.json"
             if manifest.exists():
@@ -119,18 +115,18 @@ class MyCustomAgentAdapter(FrameworkAdapter):
                     ))
                 except Exception:
                     continue
-        
+
         return skills
-    
-    def load_sessions(self) -> List[SessionSnapshot]:
+
+    def load_sessions(self) -> list[SessionSnapshot]:
         """No session support in this example."""
         return []
-    
-    def write_memories(self, entries: List[MemoryEntry]) -> int:
+
+    def write_memories(self, entries: list[MemoryEntry]) -> int:
         """Write memories back to JSON files."""
         memory_entries = []
         user_prefs = {}
-        
+
         for entry in entries:
             if entry.target == "memory":
                 memory_entries.append({
@@ -140,23 +136,23 @@ class MyCustomAgentAdapter(FrameworkAdapter):
             elif entry.target == "user":
                 key = entry.metadata.get("key", entry.content.split(":")[0])
                 user_prefs[key] = entry.content.split(":", 1)[-1].strip()
-        
+
         count = 0
-        
+
         if memory_entries:
             self._memory_file.write_text(
                 json.dumps({"entries": memory_entries}, indent=2)
             )
             count += len(memory_entries)
-        
+
         if user_prefs:
             self._user_prefs_file.write_text(
                 json.dumps(user_prefs, indent=2)
             )
             count += len(user_prefs)
-        
+
         return count
-    
+
     def write_config(self, config: ConfigSnapshot) -> bool:
         """Write config back to config.json."""
         try:
@@ -170,11 +166,11 @@ class MyCustomAgentAdapter(FrameworkAdapter):
         except Exception:
             pass
         return False
-    
-    def write_skills(self, skills: List[SkillSnapshot]) -> int:
+
+    def write_skills(self, skills: list[SkillSnapshot]) -> int:
         """Write plugins from skills."""
         count = 0
-        
+
         for skill in skills:
             try:
                 plugin_path = self._plugins_dir / skill.skill_path.replace("manifest.json", "")
@@ -183,9 +179,9 @@ class MyCustomAgentAdapter(FrameworkAdapter):
                 count += 1
             except Exception:
                 continue
-        
+
         return count
-    
+
     def get_profile_identifier(self) -> str:
         return "default"
 
@@ -194,23 +190,23 @@ def main():
     """Demo the custom adapter."""
     print("🔧 Custom Adapter Example")
     print("=" * 40)
-    
+
     # The adapter is auto-registered via @register_adapter
     # Now you can use it like any other adapter:
-    
+
     from agent_cloud_memory.adapters import get_adapter_by_name
-    
+
     adapter_class = get_adapter_by_name("my-custom-agent")
     if adapter_class:
         print(f"✓ Custom adapter registered: {adapter_class.DISPLAY_NAME}")
-        
+
         # Usage:
         # adapter = adapter_class(Path.home() / ".my-custom-agent")
         # adapter.set_client(client)
         # result = adapter.full_sync(client)
     else:
         print("✗ Adapter not found")
-    
+
     # List all available adapters
     from agent_cloud_memory.adapters import list_available_adapters
     print("\nAvailable adapters:")
